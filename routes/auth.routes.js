@@ -9,11 +9,13 @@ const bcrypt = require('bcryptjs')
 const saltRounds=10;
   
 // Add passport
+const passport=require('passport');
+
 
 const ensureLogin = require('connect-ensure-login');
 
 router.get('/private-page', ensureLogin.ensureLoggedIn(), (req, res) => {
-  res.render('passport/private', { user: req.user });
+  res.render('auth/private', { user: req.user });
 });
 
 router.get('/signup',(req,res,next)=>{
@@ -31,8 +33,11 @@ if (username==="" || password===""){
 }
 User.findOne({"username":username})
 .then(user=>{
-  if(user){  res.render('auth/signup',{errorMessage: "Username already exist"}) }
-  else {
+  if(user){  
+    res.render('auth/signup',{errorMessage: "Username already exist"});
+    return;
+
+}
     const salt=bcrypt.genSaltSync(saltRounds);
     const hashPass=bcrypt.hashSync(password,salt);
      
@@ -40,18 +45,23 @@ User.findOne({"username":username})
     .then(()=>{
       console.log("User created successfully");
       res.render("auth/login");
-    }).catch(err=>"Error happened",error)
+    }).catch(err=>console.log("Error happened",error))
 
+}).catch(err => next(err))
+});
 
+router.post('/login',passport.authenticate("local",{
 
-  }
-})
-  // const hashPass = bcrypt.
+    successRedirect:'/',
+    failureRedirect:'/login',
+    failureFlash:true,
+    passReqToCallback:true
 
+}))
 
-
-
-
-})
+router.get("/logout", (req, res) => {
+  req.logout();
+  res.redirect("/login");
+});
 
 module.exports = router;
